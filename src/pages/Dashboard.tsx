@@ -34,40 +34,50 @@ import {
   navigationMenuTriggerStyle
 } from "@/components/ui/navigation-menu";
 
-// Define schema for a zap
-const zapSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  isActive: z.boolean().default(false),
-  triggerApp: z.string().optional(),
-  actionApp: z.string().optional(),
-  webhookUrl: z.string().optional(),
-  schedule: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-});
-
-type ZapTag = {
-  id: string;
-  name: string;
-  color: string;
-};
-
+// Define ZapApp type
 type ZapApp = {
   id: string;
   name: string;
   icon: string;
 };
 
-// Extended Zap type with more fields
-type Zap = z.infer<typeof zapSchema> & {
+// Define ZapTag type
+type ZapTag = {
   id: string;
+  name: string;
+  color: string;
+};
+
+// Define status type
+type ZapStatus = 'success' | 'error' | 'warning' | null;
+
+// Define schema for a zap - note we're changing app references to string IDs
+const zapSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  isActive: z.boolean().default(false),
+  triggerAppId: z.string().optional(),
+  actionAppId: z.string().optional(),
+  webhookUrl: z.string().optional(),
+  schedule: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+// Extended Zap type that separates form fields from runtime properties
+type Zap = {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
   createdAt: Date;
   lastRun?: Date;
   runCount?: number;
   triggerApp?: ZapApp;
   actionApp?: ZapApp;
+  webhookUrl?: string;
+  schedule?: string;
   tags?: string[];
-  status?: 'success' | 'error' | 'warning' | null;
+  status?: ZapStatus;
 };
 
 // Popular app integrations
@@ -186,8 +196,8 @@ const Dashboard: React.FC = () => {
       name: "",
       description: "",
       isActive: false,
-      triggerApp: "",
-      actionApp: "",
+      triggerAppId: "",
+      actionAppId: "",
       webhookUrl: "",
       schedule: "",
       tags: []
@@ -200,8 +210,8 @@ const Dashboard: React.FC = () => {
       name: selectedZap?.name || "",
       description: selectedZap?.description || "",
       isActive: selectedZap?.isActive || false,
-      triggerApp: selectedZap?.triggerApp?.id || "",
-      actionApp: selectedZap?.actionApp?.id || "",
+      triggerAppId: selectedZap?.triggerApp?.id || "",
+      actionAppId: selectedZap?.actionApp?.id || "",
       webhookUrl: selectedZap?.webhookUrl || "",
       schedule: selectedZap?.schedule || "",
       tags: selectedZap?.tags || []
@@ -215,8 +225,8 @@ const Dashboard: React.FC = () => {
         name: "",
         description: "",
         isActive: false,
-        triggerApp: "",
-        actionApp: "",
+        triggerAppId: "",
+        actionAppId: "",
         webhookUrl: "",
         schedule: "",
         tags: []
@@ -231,8 +241,8 @@ const Dashboard: React.FC = () => {
         name: selectedZap.name,
         description: selectedZap.description || "",
         isActive: selectedZap.isActive,
-        triggerApp: selectedZap.triggerApp?.id || "",
-        actionApp: selectedZap.actionApp?.id || "",
+        triggerAppId: selectedZap.triggerApp?.id || "",
+        actionAppId: selectedZap.actionApp?.id || "",
         webhookUrl: selectedZap.webhookUrl || "",
         schedule: selectedZap.schedule || "",
         tags: selectedZap.tags || []
@@ -241,8 +251,8 @@ const Dashboard: React.FC = () => {
   }, [selectedZap, isEditOpen, editForm]);
 
   const handleCreate = (data: z.infer<typeof zapSchema>) => {
-    const triggerAppObj = data.triggerApp ? popularApps.find(app => app.id === data.triggerApp) : undefined;
-    const actionAppObj = data.actionApp ? popularApps.find(app => app.id === data.actionApp) : undefined;
+    const triggerAppObj = data.triggerAppId ? popularApps.find(app => app.id === data.triggerAppId) : undefined;
+    const actionAppObj = data.actionAppId ? popularApps.find(app => app.id === data.actionAppId) : undefined;
 
     const newZap: Zap = {
       id: Date.now().toString(),
@@ -268,8 +278,8 @@ const Dashboard: React.FC = () => {
   const handleUpdate = (data: z.infer<typeof zapSchema>) => {
     if (!selectedZap) return;
     
-    const triggerAppObj = data.triggerApp ? popularApps.find(app => app.id === data.triggerApp) : undefined;
-    const actionAppObj = data.actionApp ? popularApps.find(app => app.id === data.actionApp) : undefined;
+    const triggerAppObj = data.triggerAppId ? popularApps.find(app => app.id === data.triggerAppId) : undefined;
+    const actionAppObj = data.actionAppId ? popularApps.find(app => app.id === data.actionAppId) : undefined;
     
     const updatedZaps = zaps.map(zap => 
       zap.id === selectedZap.id 
@@ -309,7 +319,7 @@ const Dashboard: React.FC = () => {
       createdAt: new Date(),
       lastRun: undefined,
       runCount: 0,
-      status: null
+      status: null as ZapStatus
     };
     
     setZaps([...zaps, newZap]);
@@ -338,7 +348,7 @@ const Dashboard: React.FC = () => {
               ...zap,
               lastRun: new Date(),
               runCount: (zap.runCount || 0) + 1,
-              status: 'success'
+              status: 'success' as ZapStatus
             }
           : zap
       );
@@ -369,7 +379,7 @@ const Dashboard: React.FC = () => {
               lastRun: new Date(),
               runCount: (zap.runCount || 0) + 1,
               webhookUrl: webhookUrl,
-              status: 'success'
+              status: 'success' as ZapStatus
             }
           : zap
       );
@@ -405,7 +415,7 @@ const Dashboard: React.FC = () => {
     return tag ? tag.name : "";
   };
   
-  const getStatusColor = (status?: 'success' | 'error' | 'warning' | null) => {
+  const getStatusColor = (status?: ZapStatus) => {
     switch (status) {
       case 'success':
         return 'text-green-500';
@@ -453,7 +463,7 @@ const Dashboard: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               control={formToUse.control}
-              name="triggerApp"
+              name="triggerAppId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Trigger App</FormLabel>
@@ -477,7 +487,7 @@ const Dashboard: React.FC = () => {
             
             <FormField
               control={formToUse.control}
-              name="actionApp"
+              name="actionAppId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Action App</FormLabel>
