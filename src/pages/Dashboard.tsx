@@ -1,324 +1,444 @@
 
 import React, { useState } from 'react';
-import { PlusCircle, Search, Edit2, Trash2 } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { toast } from "sonner";
+import { useMediaQuery } from "@/hooks/use-mobile";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
-import { Badge } from '@/components/ui/badge';
-import Navbar from '@/components/Navbar';
+// Define the schema for a zap
+const zapSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  isActive: z.boolean().default(false),
+});
 
-// This is a mock data structure for zaps - replace with real data when available
-type Zap = {
+type Zap = z.infer<typeof zapSchema> & {
   id: string;
-  name: string;
-  description: string;
-  status: 'active' | 'inactive' | 'draft';
-  lastRun: string;
-  createdAt: string;
+  createdAt: Date;
 };
 
-const mockZaps: Zap[] = [
-  {
-    id: '1',
-    name: 'Email to Slack',
-    description: 'Send new emails to Slack',
-    status: 'active',
-    lastRun: '2025-04-09T10:30:00Z',
-    createdAt: '2025-03-15T08:45:00Z',
-  },
-  {
-    id: '2',
-    name: 'Google Sheet Update',
-    description: 'Update spreadsheet when form is submitted',
-    status: 'inactive',
-    lastRun: '2025-04-07T14:15:00Z',
-    createdAt: '2025-03-20T11:20:00Z',
-  },
-  {
-    id: '3',
-    name: 'Customer Follow-up',
-    description: 'Send follow-up email after purchase',
-    status: 'draft',
-    lastRun: '',
-    createdAt: '2025-04-05T09:10:00Z',
-  },
-];
-
 const Dashboard: React.FC = () => {
-  const [zaps, setZaps] = useState<Zap[]>(mockZaps);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [zaps, setZaps] = useState<Zap[]>([
+    {
+      id: "1",
+      name: "Email to Slack Notification",
+      description: "Sends a Slack notification when a new email arrives",
+      isActive: true,
+      createdAt: new Date("2025-03-05")
+    },
+    {
+      id: "2",
+      name: "Twitter Mentions to Discord",
+      description: "Posts Twitter mentions to a Discord channel",
+      isActive: false,
+      createdAt: new Date("2025-03-10")
+    },
+    {
+      id: "3",
+      name: "Google Calendar to Notion",
+      description: "Syncs Google Calendar events to Notion database",
+      isActive: true,
+      createdAt: new Date("2025-03-15")
+    }
+  ]);
+  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedZap, setSelectedZap] = useState<Zap | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const { toast } = useToast();
-
-  // Filter zaps based on search query
+  
+  const isMobile = useMediaQuery("(max-width: 640px)");
+  
+  // Filter zaps based on search term
   const filteredZaps = zaps.filter(zap => 
-    zap.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    zap.description.toLowerCase().includes(searchQuery.toLowerCase())
+    zap.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (zap.description && zap.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleDelete = (id: string) => {
-    setZaps(zaps.filter(zap => zap.id !== id));
-    setIsDeleteDialogOpen(false);
-    toast({
-      title: "Zap deleted",
-      description: "The zap has been deleted successfully.",
-    });
-  };
+  const form = useForm<z.infer<typeof zapSchema>>({
+    resolver: zodResolver(zapSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      isActive: false
+    }
+  });
 
-  const handleEdit = (zap: Zap) => {
-    setSelectedZap(zap);
-    setIsFormDialogOpen(true);
-  };
+  const editForm = useForm<z.infer<typeof zapSchema>>({
+    resolver: zodResolver(zapSchema),
+    defaultValues: {
+      name: selectedZap?.name || "",
+      description: selectedZap?.description || "",
+      isActive: selectedZap?.isActive || false
+    }
+  });
 
-  const handleCreate = () => {
-    setSelectedZap(null);
-    setIsFormDialogOpen(true);
-  };
-
-  const handleSaveZap = (zapData: Partial<Zap>) => {
-    if (selectedZap) {
-      // Update existing zap
-      setZaps(zaps.map(zap => 
-        zap.id === selectedZap.id ? { ...zap, ...zapData } : zap
-      ));
-      toast({
-        title: "Zap updated",
-        description: "The zap has been updated successfully.",
-      });
-    } else {
-      // Create new zap
-      const newZap: Zap = {
-        id: Date.now().toString(),
-        name: zapData.name || 'Untitled Zap',
-        description: zapData.description || '',
-        status: 'draft',
-        lastRun: '',
-        createdAt: new Date().toISOString(),
-      };
-      setZaps([...zaps, newZap]);
-      toast({
-        title: "Zap created",
-        description: "A new zap has been created successfully.",
+  // Reset form when the create dialog opens
+  React.useEffect(() => {
+    if (isCreateOpen) {
+      form.reset({
+        name: "",
+        description: "",
+        isActive: false
       });
     }
-    setIsFormDialogOpen(false);
-  };
+  }, [isCreateOpen, form]);
 
-  // Helper to format dates
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'Never';
-    return new Date(dateString).toLocaleString();
-  };
+  // Update edit form when selected zap changes
+  React.useEffect(() => {
+    if (selectedZap && isEditOpen) {
+      editForm.reset({
+        name: selectedZap.name,
+        description: selectedZap.description || "",
+        isActive: selectedZap.isActive
+      });
+    }
+  }, [selectedZap, isEditOpen, editForm]);
 
-  // Status badge component
-  const StatusBadge = ({ status }: { status: Zap['status'] }) => {
-    const variants = {
-      active: "bg-green-500 hover:bg-green-600",
-      inactive: "bg-yellow-500 hover:bg-yellow-600",
-      draft: "bg-gray-500 hover:bg-gray-600"
+  const handleCreate = (data: z.infer<typeof zapSchema>) => {
+    const newZap: Zap = {
+      id: Date.now().toString(),
+      name: data.name,
+      description: data.description || "",
+      isActive: data.isActive,
+      createdAt: new Date()
     };
+    
+    setZaps([...zaps, newZap]);
+    setIsCreateOpen(false);
+    toast.success("Zap created successfully!");
+  };
 
+  const handleUpdate = (data: z.infer<typeof zapSchema>) => {
+    if (!selectedZap) return;
+    
+    const updatedZaps = zaps.map(zap => 
+      zap.id === selectedZap.id ? { ...zap, ...data } : zap
+    );
+    
+    setZaps(updatedZaps);
+    setIsEditOpen(false);
+    toast.success("Zap updated successfully!");
+  };
+
+  const handleDelete = () => {
+    if (!selectedZap) return;
+    
+    const updatedZaps = zaps.filter(zap => zap.id !== selectedZap.id);
+    setZaps(updatedZaps);
+    setIsDeleteOpen(false);
+    toast.success("Zap deleted successfully!");
+  };
+
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    }).format(date);
+  };
+  
+  const renderForm = (formToUse: typeof form, onSubmit: (data: z.infer<typeof zapSchema>) => void) => {
     return (
-      <Badge className={variants[status]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
+      <Form {...formToUse}>
+        <form onSubmit={formToUse.handleSubmit(onSubmit)} className="space-y-6">
+          <FormField
+            control={formToUse.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={formToUse.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={formToUse.control}
+            name="isActive"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>
+                    Active
+                  </FormLabel>
+                  <FormDescription>
+                    This zap will run automatically when activated.
+                  </FormDescription>
+                </div>
+              </FormItem>
+            )}
+          />
+          
+          <Button type="submit" className="w-full">Save</Button>
+        </form>
+      </Form>
     );
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <div className="flex-1 container max-w-7xl mx-auto py-8 px-4">
-        <div className="flex flex-col md:flex-row items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Zaps Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Manage your automation workflows</p>
+    <div className="container mx-auto px-4 py-20 max-w-7xl">
+      <div className="flex flex-col space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between space-y-4 sm:space-y-0 sm:space-x-4">
+          <h1 className="text-2xl font-bold">My Zaps</h1>
+          <div className="flex w-full sm:w-auto space-x-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search zaps..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <Button onClick={() => setIsCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Create Zap
+            </Button>
           </div>
-          <Button onClick={handleCreate} className="mt-4 md:mt-0">
-            <PlusCircle className="mr-2 h-4 w-4" /> Create New Zap
-          </Button>
         </div>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Zaps</CardTitle>
-            <CardDescription>View and manage all your automation workflows</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search zaps..."
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Run</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+        {filteredZaps.length > 0 ? (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="hidden md:table-cell">Description</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden sm:table-cell">Created</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredZaps.map((zap) => (
+                  <TableRow key={zap.id}>
+                    <TableCell className="font-medium">{zap.name}</TableCell>
+                    <TableCell className="hidden md:table-cell max-w-xs truncate">{zap.description}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${zap.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                        {zap.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">{formatDate(zap.createdAt)}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedZap(zap);
+                            setIsViewOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span className="sr-only">View</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedZap(zap);
+                            setIsEditOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedZap(zap);
+                            setIsDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sr-only">Delete</span>
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredZaps.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        {searchQuery ? 'No matching zaps found' : 'No zaps created yet'}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredZaps.map((zap) => (
-                      <TableRow key={zap.id}>
-                        <TableCell className="font-medium">{zap.name}</TableCell>
-                        <TableCell>{zap.description}</TableCell>
-                        <TableCell><StatusBadge status={zap.status} /></TableCell>
-                        <TableCell>{formatDate(zap.lastRun)}</TableCell>
-                        <TableCell>{formatDate(zap.createdAt)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(zap)}>
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => {
-                                setSelectedZap(zap);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+            <h3 className="mt-2 text-lg font-semibold">No zaps found</h3>
+            <p className="mb-4 mt-1 text-sm text-muted-foreground">
+              {searchTerm ? "No zaps match your search." : "Get started by creating a new zap."}
+            </p>
+            {!searchTerm && (
+              <Button onClick={() => setIsCreateOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" /> Create Zap
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      {/* Create Zap Dialog/Drawer */}
+      {isMobile ? (
+        <Drawer open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Create Zap</DrawerTitle>
+              <DrawerDescription>Create a new automation zap to connect your services.</DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4">
+              {renderForm(form, handleCreate)}
+            </div>
+            <DrawerFooter>
+              <DrawerClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Confirm Deletion</DialogTitle>
+              <DialogTitle>Create Zap</DialogTitle>
+              <DialogDescription>Create a new automation zap to connect your services.</DialogDescription>
+            </DialogHeader>
+            {renderForm(form, handleCreate)}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* View Zap Dialog/Drawer */}
+      {selectedZap && (
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{selectedZap.name}</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete "{selectedZap?.name}"? This action cannot be undone.
+                Created on {formatDate(selectedZap.createdAt)}
               </DialogDescription>
             </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium">Description</h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {selectedZap.description || "No description provided."}
+                </p>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium">Status</h4>
+                <div className="mt-1">
+                  <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${selectedZap.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                    {selectedZap.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+            </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => selectedZap && handleDelete(selectedZap.id)}
-              >
-                Delete
-              </Button>
+              <Button variant="outline" onClick={() => setIsViewOpen(false)}>Close</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
 
-        {/* Create/Edit Form Dialog */}
-        <Dialog open={isFormDialogOpen} onOpenChange={setIsFormDialogOpen}>
+      {/* Edit Zap Dialog/Drawer */}
+      {selectedZap && (
+        <>
+          {isMobile ? (
+            <Drawer open={isEditOpen} onOpenChange={setIsEditOpen}>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Edit Zap</DrawerTitle>
+                  <DrawerDescription>Update your automation zap.</DrawerDescription>
+                </DrawerHeader>
+                <div className="px-4">
+                  {renderForm(editForm, handleUpdate)}
+                </div>
+                <DrawerFooter>
+                  <DrawerClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          ) : (
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Zap</DialogTitle>
+                  <DialogDescription>Update your automation zap.</DialogDescription>
+                </DialogHeader>
+                {renderForm(editForm, handleUpdate)}
+              </DialogContent>
+            </Dialog>
+          )}
+        </>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {selectedZap && (
+        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{selectedZap ? 'Edit Zap' : 'Create New Zap'}</DialogTitle>
+              <DialogTitle>Delete Zap</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete "{selectedZap.name}"?
+                This action cannot be undone.
+              </DialogDescription>
             </DialogHeader>
-            <ZapForm 
-              initialData={selectedZap || undefined} 
-              onSubmit={handleSaveZap} 
-              onCancel={() => setIsFormDialogOpen(false)}
-            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      )}
     </div>
   );
 };
 
-type ZapFormProps = {
-  initialData?: Partial<Zap>;
-  onSubmit: (data: Partial<Zap>) => void;
-  onCancel: () => void;
-};
-
-const ZapForm: React.FC<ZapFormProps> = ({ initialData, onSubmit, onCancel }) => {
-  const [name, setName] = useState(initialData?.name || '');
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [status, setStatus] = useState<Zap['status']>(initialData?.status || 'draft');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({ name, description, status });
-  };
-
+// Properly define FormDescription component
+function FormDescription({ children }: { children: React.ReactNode }) {
   return (
-    <Form>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <FormField
-          name="name"
-          render={() => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter zap name"
-                  required
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          name="description"
-          render={() => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Input 
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Enter zap description"
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit">
-            {initialData ? 'Update' : 'Create'} Zap
-          </Button>
-        </div>
-      </form>
-    </Form>
+    <p className="text-[0.8rem] text-muted-foreground">
+      {children}
+    </p>
   );
-};
+}
 
 export default Dashboard;
