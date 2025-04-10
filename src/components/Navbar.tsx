@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogIn } from 'lucide-react';
+import { Menu, X, LogIn, Home } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -32,6 +32,9 @@ const Navbar: React.FC = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
+          <Link to="/" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors flex items-center gap-1">
+            <Home className="h-4 w-4" /> Home
+          </Link>
           <Link to="#features" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors">Features</Link>
           <Link to="#workflow" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors">Workflow</Link>
           <Link to="#pricing" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors">Pricing</Link>
@@ -62,6 +65,13 @@ const Navbar: React.FC = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-white shadow-lg">
           <div className="container mx-auto px-4 py-4 space-y-4">
+            <Link 
+              to="/"
+              className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors flex items-center gap-1"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Home className="h-4 w-4" /> Home
+            </Link>
             <Link 
               to="#features" 
               className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors"
