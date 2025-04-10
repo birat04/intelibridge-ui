@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Search, Plus, Edit, Trash2, Eye, Zap, ArrowRight, Settings, MoreHorizontal, Play, Pause, Copy } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye, Zap, ArrowRight, Settings, MoreHorizontal, Play, Pause, Copy, X, ChevronLeft, ArrowLeftCircle } from 'lucide-react';
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -33,6 +33,10 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle
 } from "@/components/ui/navigation-menu";
+import { DndContext, closestCenter, MouseSensor, TouchSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 // Define ZapApp type
 type ZapApp = {
@@ -51,7 +55,7 @@ type ZapTag = {
 // Define status type
 type ZapStatus = 'success' | 'error' | 'warning' | null;
 
-// Define schema for a zap - note we're changing app references to string IDs
+// Define schema for a zap
 const zapSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
@@ -63,7 +67,7 @@ const zapSchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
-// Extended Zap type that separates form fields from runtime properties
+// Extended Zap type
 type Zap = {
   id: string;
   name: string;
@@ -78,6 +82,67 @@ type Zap = {
   schedule?: string;
   tags?: string[];
   status?: ZapStatus;
+};
+
+// Type for draggable app item
+type AppItem = {
+  id: string;
+  type: 'trigger' | 'action';
+  app: ZapApp;
+};
+
+// App selection component with drag-and-drop capability
+const DraggableApp = ({ app, type }: { app: ZapApp, type: 'trigger' | 'action' }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: `${type}-${app.id}`,
+  });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="flex items-center p-2 mb-2 bg-white border rounded-md shadow-sm cursor-move hover:border-primary"
+    >
+      <div className="mr-2 text-xl">{app.icon}</div>
+      <div>{app.name}</div>
+    </div>
+  );
+};
+
+// Drop zone component
+const DropZone = ({ label, selectedApp, onClear, className = "" }: { 
+  label: string; 
+  selectedApp?: ZapApp;
+  onClear: () => void;
+  className?: string;
+}) => {
+  return (
+    <div className={`p-4 border-2 border-dashed rounded-md ${className}`}>
+      <p className="mb-2 text-sm font-medium text-muted-foreground">{label}</p>
+      {selectedApp ? (
+        <div className="flex items-center justify-between p-2 bg-accent/50 rounded-md">
+          <div className="flex items-center">
+            <span className="mr-2 text-xl">{selectedApp.icon}</span>
+            <span>{selectedApp.name}</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClear} className="h-8 w-8 p-0">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center h-16 bg-muted/50 rounded-md">
+          <p className="text-sm text-muted-foreground">Drop app here</p>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Popular app integrations
@@ -171,6 +236,51 @@ const Dashboard: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isRunning, setIsRunning] = useState(false);
+  const [creationStep, setCreationStep] = useState(1);
+  const [selectedTriggerApp, setSelectedTriggerApp] = useState<ZapApp | undefined>(undefined);
+  const [selectedActionApp, setSelectedActionApp] = useState<ZapApp | undefined>(undefined);
+  
+  // Set up DnD sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+
+  // Handle drag end for app selection
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!active || !over) return;
+    
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    
+    // Parse the app ID and type from the draggable ID
+    const [activeType, activeAppId] = activeId.split('-');
+    
+    if (overId === 'trigger-dropzone' && activeType !== 'action') {
+      const app = popularApps.find(app => app.id === activeAppId);
+      if (app) {
+        setSelectedTriggerApp(app);
+        form.setValue('triggerAppId', app.id);
+      }
+    } else if (overId === 'action-dropzone' && activeType !== 'trigger') {
+      const app = popularApps.find(app => app.id === activeAppId);
+      if (app) {
+        setSelectedActionApp(app);
+        form.setValue('actionAppId', app.id);
+      }
+    }
+  };
   
   const isMobile = useMediaQuery("(max-width: 640px)");
   
@@ -231,6 +341,9 @@ const Dashboard: React.FC = () => {
         schedule: "",
         tags: []
       });
+      setCreationStep(1);
+      setSelectedTriggerApp(undefined);
+      setSelectedActionApp(undefined);
     }
   }, [isCreateOpen, form]);
 
@@ -247,6 +360,8 @@ const Dashboard: React.FC = () => {
         schedule: selectedZap.schedule || "",
         tags: selectedZap.tags || []
       });
+      setSelectedTriggerApp(selectedZap.triggerApp);
+      setSelectedActionApp(selectedZap.actionApp);
     }
   }, [selectedZap, isEditOpen, editForm]);
 
@@ -428,12 +543,265 @@ const Dashboard: React.FC = () => {
     }
   };
   
-  const renderForm = (formToUse: typeof form, onSubmit: (data: z.infer<typeof zapSchema>) => void) => {
+  const renderCreateStep = () => {
+    switch (creationStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-medium">Step 1: Choose Apps</h3>
+              <p className="text-sm text-muted-foreground">Select the trigger and action apps for your zap</p>
+            </div>
+            
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              modifiers={[restrictToVerticalAxis]}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">1. Choose a Trigger</h4>
+                  <div className="mb-4">
+                    <div id="trigger-dropzone">
+                      <DropZone 
+                        label="When this happens..." 
+                        selectedApp={selectedTriggerApp} 
+                        onClear={() => {
+                          setSelectedTriggerApp(undefined);
+                          form.setValue('triggerAppId', '');
+                        }}
+                        className="bg-blue-50 border-blue-200"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h5 className="text-xs font-medium text-muted-foreground mb-2">Available Apps</h5>
+                    <div className="max-h-60 overflow-y-auto p-1">
+                      <SortableContext items={popularApps.map(app => `trigger-${app.id}`)} strategy={verticalListSortingStrategy}>
+                        {popularApps.map(app => (
+                          <DraggableApp key={`trigger-${app.id}`} app={app} type="trigger" />
+                        ))}
+                      </SortableContext>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium mb-2">2. Choose an Action</h4>
+                  <div className="mb-4">
+                    <div id="action-dropzone">
+                      <DropZone 
+                        label="Then do this..." 
+                        selectedApp={selectedActionApp}
+                        onClear={() => {
+                          setSelectedActionApp(undefined);
+                          form.setValue('actionAppId', '');
+                        }}
+                        className="bg-green-50 border-green-200"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h5 className="text-xs font-medium text-muted-foreground mb-2">Available Apps</h5>
+                    <div className="max-h-60 overflow-y-auto p-1">
+                      <SortableContext items={popularApps.map(app => `action-${app.id}`)} strategy={verticalListSortingStrategy}>
+                        {popularApps.map(app => (
+                          <DraggableApp key={`action-${app.id}`} app={app} type="action" />
+                        ))}
+                      </SortableContext>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </DndContext>
+            
+            <div className="flex justify-between pt-4 mt-2 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => setCreationStep(2)}
+                disabled={!selectedTriggerApp || !selectedActionApp}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        );
+      
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-medium">Step 2: Configure Zap</h3>
+              <p className="text-sm text-muted-foreground">Set up the details of your zap</p>
+            </div>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="My amazing zap" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} placeholder="What does this zap do?" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="p-3 rounded-md bg-muted/50 flex items-center space-x-2">
+                  {selectedTriggerApp && (
+                    <>
+                      <div className="flex items-center">
+                        <span className="mr-1 text-lg">{selectedTriggerApp.icon}</span>
+                        <span className="text-sm font-medium">{selectedTriggerApp.name}</span>
+                      </div>
+                      <ArrowRight className="mx-2 h-4 w-4 text-muted-foreground" />
+                      {selectedActionApp && (
+                        <div className="flex items-center">
+                          <span className="mr-1 text-lg">{selectedActionApp.icon}</span>
+                          <span className="text-sm font-medium">{selectedActionApp.name}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="webhookUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Webhook URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="https://hooks.zapier.com/..." />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="schedule"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Schedule (Optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Every day at 9:00 AM" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {zapTags.map((tag) => (
+                          <div key={tag.id} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`tag-${tag.id}`} 
+                              checked={field.value?.includes(tag.id)}
+                              onCheckedChange={(checked) => {
+                                const updatedTags = checked
+                                  ? [...(field.value || []), tag.id]
+                                  : (field.value || []).filter(id => id !== tag.id);
+                                field.onChange(updatedTags);
+                              }}
+                            />
+                            <label
+                              htmlFor={`tag-${tag.id}`}
+                              className={`text-sm px-2 py-1 rounded-full ${tag.color.split(' ')[0]} ${tag.color.split(' ')[1]}`}
+                            >
+                              {tag.name}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="isActive"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Active
+                        </FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          This zap will run automatically when activated.
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-between pt-4 mt-2 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCreationStep(1)}
+                    className="flex items-center"
+                  >
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                  </Button>
+                  <Button type="submit">Create Zap</Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+  
+  const renderEditForm = () => {
     return (
-      <Form {...formToUse}>
-        <form onSubmit={formToUse.handleSubmit(onSubmit)} className="space-y-6">
+      <Form {...editForm}>
+        <form onSubmit={editForm.handleSubmit(handleUpdate)} className="space-y-6">
           <FormField
-            control={formToUse.control}
+            control={editForm.control}
             name="name"
             render={({ field }) => (
               <FormItem>
@@ -447,7 +815,7 @@ const Dashboard: React.FC = () => {
           />
           
           <FormField
-            control={formToUse.control}
+            control={editForm.control}
             name="description"
             render={({ field }) => (
               <FormItem>
@@ -460,58 +828,75 @@ const Dashboard: React.FC = () => {
             )}
           />
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField
-              control={formToUse.control}
-              name="triggerAppId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Trigger App</FormLabel>
-                  <FormControl>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      {...field}
-                    >
-                      <option value="">Select Trigger App</option>
-                      {popularApps.map((app) => (
-                        <option key={app.id} value={app.id}>
-                          {app.icon} {app.name}
-                        </option>
-                      ))}
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis]}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium mb-2">Trigger App</h4>
+                <div className="mb-4">
+                  <div id="trigger-dropzone">
+                    <DropZone 
+                      label="When this happens..." 
+                      selectedApp={selectedTriggerApp} 
+                      onClear={() => {
+                        setSelectedTriggerApp(undefined);
+                        editForm.setValue('triggerAppId', '');
+                      }}
+                      className="bg-blue-50 border-blue-200"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium mb-2">Action App</h4>
+                <div className="mb-4">
+                  <div id="action-dropzone">
+                    <DropZone 
+                      label="Then do this..." 
+                      selectedApp={selectedActionApp}
+                      onClear={() => {
+                        setSelectedActionApp(undefined);
+                        editForm.setValue('actionAppId', '');
+                      }}
+                      className="bg-green-50 border-green-200"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
             
-            <FormField
-              control={formToUse.control}
-              name="actionAppId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Action App</FormLabel>
-                  <FormControl>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      {...field}
-                    >
-                      <option value="">Select Action App</option>
-                      {popularApps.map((app) => (
-                        <option key={app.id} value={app.id}>
-                          {app.icon} {app.name}
-                        </option>
-                      ))}
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <h5 className="text-xs font-medium text-muted-foreground mb-2">Available Trigger Apps</h5>
+                <div className="max-h-40 overflow-y-auto p-1">
+                  <SortableContext items={popularApps.map(app => `trigger-${app.id}`)} strategy={verticalListSortingStrategy}>
+                    {popularApps.map(app => (
+                      <DraggableApp key={`trigger-${app.id}`} app={app} type="trigger" />
+                    ))}
+                  </SortableContext>
+                </div>
+              </div>
+              
+              <div>
+                <h5 className="text-xs font-medium text-muted-foreground mb-2">Available Action Apps</h5>
+                <div className="max-h-40 overflow-y-auto p-1">
+                  <SortableContext items={popularApps.map(app => `action-${app.id}`)} strategy={verticalListSortingStrategy}>
+                    {popularApps.map(app => (
+                      <DraggableApp key={`action-${app.id}`} app={app} type="action" />
+                    ))}
+                  </SortableContext>
+                </div>
+              </div>
+            </div>
+          </DndContext>
 
           <FormField
-            control={formToUse.control}
+            control={editForm.control}
             name="webhookUrl"
             render={({ field }) => (
               <FormItem>
@@ -525,7 +910,7 @@ const Dashboard: React.FC = () => {
           />
 
           <FormField
-            control={formToUse.control}
+            control={editForm.control}
             name="schedule"
             render={({ field }) => (
               <FormItem>
@@ -539,7 +924,7 @@ const Dashboard: React.FC = () => {
           />
 
           <FormField
-            control={formToUse.control}
+            control={editForm.control}
             name="tags"
             render={({ field }) => (
               <FormItem>
@@ -548,7 +933,7 @@ const Dashboard: React.FC = () => {
                   {zapTags.map((tag) => (
                     <div key={tag.id} className="flex items-center space-x-2">
                       <Checkbox 
-                        id={`tag-${tag.id}`} 
+                        id={`edit-tag-${tag.id}`} 
                         checked={field.value?.includes(tag.id)}
                         onCheckedChange={(checked) => {
                           const updatedTags = checked
@@ -558,7 +943,7 @@ const Dashboard: React.FC = () => {
                         }}
                       />
                       <label
-                        htmlFor={`tag-${tag.id}`}
+                        htmlFor={`edit-tag-${tag.id}`}
                         className={`text-sm px-2 py-1 rounded-full ${tag.color.split(' ')[0]} ${tag.color.split(' ')[1]}`}
                       >
                         {tag.name}
@@ -572,7 +957,7 @@ const Dashboard: React.FC = () => {
           />
           
           <FormField
-            control={formToUse.control}
+            control={editForm.control}
             name="isActive"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
@@ -594,7 +979,7 @@ const Dashboard: React.FC = () => {
             )}
           />
           
-          <Button type="submit" className="w-full">Save</Button>
+          <Button type="submit" className="w-full">Save Changes</Button>
         </form>
       </Form>
     );
@@ -993,28 +1378,33 @@ const Dashboard: React.FC = () => {
       {isMobile ? (
         <Drawer open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Create Zap</DrawerTitle>
-              <DrawerDescription>Create a new automation zap to connect your services.</DrawerDescription>
+            <DrawerHeader className="flex items-center justify-between">
+              <div>
+                <DrawerTitle>Create Zap</DrawerTitle>
+                <DrawerDescription>Create a new automation zap to connect your services.</DrawerDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setIsCreateOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
             </DrawerHeader>
             <div className="px-4 pb-4">
-              {renderForm(form, handleCreate)}
+              {renderCreateStep()}
             </div>
-            <DrawerFooter>
-              <DrawerClose asChild>
-                <Button variant="outline">Cancel</Button>
-              </DrawerClose>
-            </DrawerFooter>
           </DrawerContent>
         </Drawer>
       ) : (
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Create Zap</DialogTitle>
-              <DialogDescription>Create a new automation zap to connect your services.</DialogDescription>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader className="flex flex-row items-center justify-between">
+              <div>
+                <DialogTitle>Create Zap</DialogTitle>
+                <DialogDescription>Create a new automation zap to connect your services.</DialogDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setIsCreateOpen(false)} className="absolute right-4 top-4">
+                <X className="h-4 w-4" />
+              </Button>
             </DialogHeader>
-            {renderForm(form, handleCreate)}
+            {renderCreateStep()}
           </DialogContent>
         </Dialog>
       )}
@@ -1023,14 +1413,19 @@ const Dashboard: React.FC = () => {
       {selectedZap && (
         <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
           <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center">
-                <span className={`mr-2 text-lg ${getStatusColor(selectedZap.status)}`}>•</span>
-                {selectedZap.name}
-              </DialogTitle>
-              <DialogDescription>
-                Created on {formatDate(selectedZap.createdAt)}
-              </DialogDescription>
+            <DialogHeader className="flex flex-row items-center justify-between">
+              <div>
+                <DialogTitle className="flex items-center">
+                  <span className={`mr-2 text-lg ${getStatusColor(selectedZap.status)}`}>•</span>
+                  {selectedZap.name}
+                </DialogTitle>
+                <DialogDescription>
+                  Created on {formatDate(selectedZap.createdAt)}
+                </DialogDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setIsViewOpen(false)} className="absolute right-4 top-4">
+                <X className="h-4 w-4" />
+              </Button>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -1134,28 +1529,38 @@ const Dashboard: React.FC = () => {
           {isMobile ? (
             <Drawer open={isEditOpen} onOpenChange={setIsEditOpen}>
               <DrawerContent>
-                <DrawerHeader>
-                  <DrawerTitle>Edit Zap</DrawerTitle>
-                  <DrawerDescription>Update your automation zap.</DrawerDescription>
+                <DrawerHeader className="flex items-center justify-between">
+                  <div>
+                    <DrawerTitle>Edit Zap</DrawerTitle>
+                    <DrawerDescription>Update your automation zap.</DrawerDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setIsEditOpen(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </DrawerHeader>
                 <div className="px-4 pb-4">
-                  {renderForm(editForm, handleUpdate)}
+                  {renderEditForm()}
                 </div>
                 <DrawerFooter>
-                  <DrawerClose asChild>
-                    <Button variant="outline">Cancel</Button>
-                  </DrawerClose>
+                  <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+                    <ArrowLeftCircle className="mr-2 h-4 w-4" /> Back
+                  </Button>
                 </DrawerFooter>
               </DrawerContent>
             </Drawer>
           ) : (
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
               <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Edit Zap</DialogTitle>
-                  <DialogDescription>Update your automation zap.</DialogDescription>
+                <DialogHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <DialogTitle>Edit Zap</DialogTitle>
+                    <DialogDescription>Update your automation zap.</DialogDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setIsEditOpen(false)} className="absolute right-4 top-4">
+                    <X className="h-4 w-4" />
+                  </Button>
                 </DialogHeader>
-                {renderForm(editForm, handleUpdate)}
+                {renderEditForm()}
               </DialogContent>
             </Dialog>
           )}
@@ -1166,12 +1571,17 @@ const Dashboard: React.FC = () => {
       {selectedZap && (
         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Zap</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete "{selectedZap.name}"?
-                This action cannot be undone.
-              </DialogDescription>
+            <DialogHeader className="flex flex-row items-center justify-between">
+              <div>
+                <DialogTitle>Delete Zap</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to delete "{selectedZap.name}"?
+                  This action cannot be undone.
+                </DialogDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setIsDeleteOpen(false)} className="absolute right-4 top-4">
+                <X className="h-4 w-4" />
+              </Button>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
@@ -1185,11 +1595,16 @@ const Dashboard: React.FC = () => {
       {selectedZap && (
         <Dialog open={isRunZapOpen} onOpenChange={setIsRunZapOpen}>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Run Zap</DialogTitle>
-              <DialogDescription>
-                Run "{selectedZap.name}" manually
-              </DialogDescription>
+            <DialogHeader className="flex flex-row items-center justify-between">
+              <div>
+                <DialogTitle>Run Zap</DialogTitle>
+                <DialogDescription>
+                  Run "{selectedZap.name}" manually
+                </DialogDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setIsRunZapOpen(false)} className="absolute right-4 top-4">
+                <X className="h-4 w-4" />
+              </Button>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
