@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { Link } from 'react-router-dom';
 import { 
   ArrowRight, 
   Mail, 
@@ -119,19 +120,23 @@ const WorkflowDemo: React.FC = () => {
             <div className="text-sm text-gray-600">
               This workflow automatically processes customer support emails, analyzes content with AI, and routes them to the right team.
             </div>
-            <Button className="whitespace-nowrap bg-intelibridge-blue hover:bg-intelibridge-blue/90">
-              Try This Template
-              <ArrowRight size={16} className="ml-2" />
-            </Button>
+            <Link to="/workflow-builder">
+              <Button className="whitespace-nowrap bg-intelibridge-blue hover:bg-intelibridge-blue/90">
+                Try This Template
+                <ArrowRight size={16} className="ml-2" />
+              </Button>
+            </Link>
           </div>
         </div>
         
         <div className="mt-16 text-center">
           <h3 className="text-xl md:text-2xl font-bold mb-6">Ready to build your own intelligent workflows?</h3>
-          <Button size="lg" className="bg-intelibridge-blue hover:bg-intelibridge-blue/90">
-            Start Building Now
-            <ArrowRight size={16} className="ml-2" />
-          </Button>
+          <Link to="/workflow-builder">
+            <Button size="lg" className="bg-intelibridge-blue hover:bg-intelibridge-blue/90">
+              Start Building Now
+              <ArrowRight size={16} className="ml-2" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

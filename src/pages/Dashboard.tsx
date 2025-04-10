@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, Filter, Grid3X3, List, Clock, Tag, ExternalLink,
-  MoreVertical, Calendar, ChevronDown, Home
+  MoreVertical, Calendar, ChevronDown, Home, Lightning
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -132,7 +132,7 @@ const Dashboard: React.FC = () => {
             </Button>
           </div>
 
-          <div>
+          <div className="mb-4">
             <h2 className="text-lg font-semibold mb-2">Tasks</h2>
             <Button variant="ghost" className="justify-start w-full">
               <Clock className="mr-2 h-4 w-4" />
@@ -142,6 +142,16 @@ const Dashboard: React.FC = () => {
               <Tag className="mr-2 h-4 w-4" />
               Tags
             </Button>
+          </div>
+
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Workflows</h2>
+            <Link to="/workflow-builder">
+              <Button variant="ghost" className="justify-start w-full">
+                <Lightning className="mr-2 h-4 w-4" />
+                Workflow Builder
+              </Button>
+            </Link>
           </div>
         </aside>
 
@@ -263,6 +273,53 @@ const Dashboard: React.FC = () => {
               </div>
             </TabsContent>
           </Tabs>
+          
+          <div className="mt-8 p-4 border rounded-md bg-gray-50">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">My Workflows</h3>
+              <Link to="/workflow-builder">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Workflow
+                </Button>
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Link to="/workflow-builder">
+                <Card className="cursor-pointer hover:border-primary transition-all hover:shadow-md">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Customer Support Automation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center text-sm text-gray-500 mb-2">
+                      <Badge className="mr-2 bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
+                      5 steps
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">
+                        <Mail className="h-3 w-3" />
+                      </div>
+                      <div className="text-gray-400">→</div>
+                      <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">
+                        <Bot className="h-3 w-3" />
+                      </div>
+                      <div className="text-gray-400">→</div>
+                      <div className="h-6 w-6 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs">
+                        <BellRing className="h-3 w-3" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+              
+              <Link to="/workflow-builder">
+                <Card className="cursor-pointer border-dashed border-gray-300 hover:border-primary transition-all flex flex-col items-center justify-center p-6">
+                  <Plus className="h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-gray-500">Create a new workflow</p>
+                </Card>
+              </Link>
+            </div>
+          </div>
         </main>
       </div>
     </div>
