@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, Filter, Grid3X3, List, Clock, Tag, ExternalLink,
-  MoreVertical, Calendar, ChevronDown, Home, Lightning
+  MoreVertical, Calendar, ChevronDown, Home, Zap,
+  Mail, Bot, BellRing, MessageSquareText
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,7 +149,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-lg font-semibold mb-2">Workflows</h2>
             <Link to="/workflow-builder">
               <Button variant="ghost" className="justify-start w-full">
-                <Lightning className="mr-2 h-4 w-4" />
+                <Zap className="mr-2 h-4 w-4" />
                 Workflow Builder
               </Button>
             </Link>
