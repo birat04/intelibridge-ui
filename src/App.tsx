@@ -10,6 +10,11 @@ import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import WorkflowBuilder from "./pages/WorkflowBuilder";
+import TablesBuilder from "./pages/TablesBuilder";
+import InterfaceBuilder from "./pages/InterfaceBuilder";
+import ChatbotBuilder from "./pages/ChatbotBuilder";
+import CanvasBuilder from "./pages/CanvasBuilder";
+import AgentsBuilder from "./pages/AgentsBuilder";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,11 +37,11 @@ const App = () => (
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/workflow-builder" element={<WorkflowBuilder />} />
-          <Route path="/tables-builder" element={<Dashboard />} />
-          <Route path="/interface-builder" element={<Dashboard />} />
-          <Route path="/chatbot-builder" element={<Dashboard />} />
-          <Route path="/canvas-builder" element={<Dashboard />} />
-          <Route path="/agents-builder" element={<Dashboard />} />
+          <Route path="/tables-builder" element={<TablesBuilder />} />
+          <Route path="/interface-builder" element={<InterfaceBuilder />} />
+          <Route path="/chatbot-builder" element={<ChatbotBuilder />} />
+          <Route path="/canvas-builder" element={<CanvasBuilder />} />
+          <Route path="/agents-builder" element={<AgentsBuilder />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
