@@ -1,109 +1,141 @@
 
-import React from 'react';
-import { CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
-interface AppOption {
+// This matches the WorkflowStep interface in WorkflowBuilder
+interface WorkflowStep {
   id: string;
+  type: string;
   name: string;
-  icon: React.ReactNode;
-}
-
-interface EventOption {
-  id: string;
-  name: string;
+  description: string;
+  config: Record<string, any>;
 }
 
 interface WorkflowStepEditorProps {
-  stepId: string;
-  type: 'trigger' | 'action';
-  appId: string;
-  eventId?: string;
-  actionId?: string;
-  availableApps: AppOption[];
-  availableEvents?: EventOption[];
-  availableActions?: EventOption[];
-  onUpdate: (id: string, updates: Record<string, any>) => void;
+  step: WorkflowStep;
+  onSave: (updatedStep: WorkflowStep) => void;
+  onCancel: () => void;
 }
 
 const WorkflowStepEditor: React.FC<WorkflowStepEditorProps> = ({
-  stepId,
-  type,
-  appId,
-  eventId,
-  actionId,
-  availableApps,
-  availableEvents,
-  availableActions,
-  onUpdate
+  step,
+  onSave,
+  onCancel
 }) => {
+  const [editedStep, setEditedStep] = useState<WorkflowStep>({...step});
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditedStep(prev => ({...prev, [name]: value}));
+  };
+
+  const handleTypeChange = (value: string) => {
+    setEditedStep(prev => ({...prev, type: value}));
+  };
+
+  const handleConfigChange = (key: string, value: any) => {
+    setEditedStep(prev => ({
+      ...prev,
+      config: {
+        ...prev.config,
+        [key]: value
+      }
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(editedStep);
+  };
+
   return (
-    <CardContent className="border-t p-4">
-      <div className="space-y-4">
+    <div>
+      <h3 className="text-lg font-medium mb-4">Edit Step</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <Label>Select an app</Label>
-          <div className="grid grid-cols-3 gap-2 mt-2">
-            {availableApps.map(app => (
-              <Button 
-                key={app.id}
-                variant={appId === app.id ? "default" : "outline"}
-                className="flex flex-col h-auto py-3 justify-center items-center gap-2"
-                onClick={() => onUpdate(stepId, { appId: app.id, eventId: undefined, actionId: undefined })}
-              >
-                {app.icon}
-                <span className="text-xs">{app.name}</span>
-              </Button>
-            ))}
-          </div>
+          <Label htmlFor="name">Name</Label>
+          <Input
+            id="name"
+            name="name"
+            value={editedStep.name}
+            onChange={handleInputChange}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={editedStep.description}
+            onChange={handleInputChange}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor="type">Type</Label>
+          <Select
+            value={editedStep.type}
+            onValueChange={handleTypeChange}
+          >
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="trigger">Trigger</SelectItem>
+              <SelectItem value="action">Action</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
-        {appId && type === 'trigger' && availableEvents && (
+        {editedStep.type === 'trigger' && (
           <div>
-            <Label>Select a trigger event</Label>
-            <Select 
-              value={eventId} 
-              onValueChange={(value) => onUpdate(stepId, { eventId: value })}
-            >
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Select an event" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableEvents.map((event) => (
-                  <SelectItem key={event.id} value={event.id}>{event.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="triggerConfig">Trigger Configuration</Label>
+            <Input
+              id="mailbox"
+              name="mailbox"
+              value={editedStep.config.mailbox || ''}
+              onChange={(e) => handleConfigChange('mailbox', e.target.value)}
+              placeholder="Mailbox (e.g. inbox)"
+              className="mt-1"
+            />
           </div>
         )}
         
-        {appId && type === 'action' && availableActions && (
+        {editedStep.type === 'action' && (
           <div>
-            <Label>Select an action</Label>
-            <Select 
-              value={actionId} 
-              onValueChange={(value) => onUpdate(stepId, { actionId: value })}
-            >
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Select an action" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableActions.map((action) => (
-                  <SelectItem key={action.id} value={action.id}>{action.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="actionConfig">Action Configuration</Label>
+            <Input
+              id="table"
+              name="table"
+              value={editedStep.config.table || ''}
+              onChange={(e) => handleConfigChange('table', e.target.value)}
+              placeholder="Table name"
+              className="mt-1 mb-2"
+            />
+            <Input
+              id="model"
+              name="model"
+              value={editedStep.config.model || ''}
+              onChange={(e) => handleConfigChange('model', e.target.value)}
+              placeholder="Model (for AI actions)"
+              className="mb-1"
+            />
           </div>
         )}
         
-        {((type === 'trigger' && eventId) || (type === 'action' && actionId)) && (
-          <div className="bg-gray-50 p-3 rounded-md">
-            <p className="text-sm text-gray-500">Additional configuration options would appear here based on the selected {type === 'trigger' ? 'trigger' : 'action'}.</p>
-          </div>
-        )}
-      </div>
-    </CardContent>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit">Save Changes</Button>
+        </div>
+      </form>
+    </div>
   );
 };
 
