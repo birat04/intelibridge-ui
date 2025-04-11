@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogIn, Home } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,6 +17,18 @@ const Navbar: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleNavigation = (id: string) => {
+    setIsMenuOpen(false);
+    if (window.location.pathname === '/') {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      navigate(`/#${id}`);
+    }
+  };
 
   return (
     <header 
@@ -35,10 +48,30 @@ const Navbar: React.FC = () => {
           <Link to="/" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors flex items-center gap-1">
             <Home className="h-4 w-4" /> Home
           </Link>
-          <Link to="#features" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors">Features</Link>
-          <Link to="#workflow" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors">Workflow</Link>
-          <Link to="#pricing" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors">Pricing</Link>
-          <Link to="#about" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors">About</Link>
+          <button 
+            onClick={() => handleNavigation('features')} 
+            className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors"
+          >
+            Features
+          </button>
+          <button 
+            onClick={() => handleNavigation('workflow')} 
+            className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors"
+          >
+            Workflow
+          </button>
+          <button 
+            onClick={() => handleNavigation('pricing')} 
+            className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors"
+          >
+            Pricing
+          </button>
+          <button 
+            onClick={() => handleNavigation('about')} 
+            className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors"
+          >
+            About
+          </button>
           <Link to="/dashboard" className="text-sm font-medium hover:text-intelibridge-light-blue transition-colors">Dashboard</Link>
           <Link to="/signin">
             <Button variant="outline" size="sm" className="mr-2">
@@ -72,34 +105,30 @@ const Navbar: React.FC = () => {
             >
               <Home className="h-4 w-4" /> Home
             </Link>
-            <Link 
-              to="#features" 
-              className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors"
-              onClick={() => setIsMenuOpen(false)}
+            <button 
+              onClick={() => handleNavigation('features')} 
+              className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors w-full text-left"
             >
               Features
-            </Link>
-            <Link 
-              to="#workflow" 
-              className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors"
-              onClick={() => setIsMenuOpen(false)}
+            </button>
+            <button 
+              onClick={() => handleNavigation('workflow')} 
+              className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors w-full text-left"
             >
               Workflow
-            </Link>
-            <Link 
-              to="#pricing" 
-              className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors"
-              onClick={() => setIsMenuOpen(false)}
+            </button>
+            <button 
+              onClick={() => handleNavigation('pricing')} 
+              className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors w-full text-left"
             >
               Pricing
-            </Link>
-            <Link 
-              to="#about" 
-              className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors"
-              onClick={() => setIsMenuOpen(false)}
+            </button>
+            <button 
+              onClick={() => handleNavigation('about')} 
+              className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors w-full text-left"
             >
               About
-            </Link>
+            </button>
             <Link 
               to="/dashboard" 
               className="block text-sm font-medium hover:text-intelibridge-light-blue transition-colors"

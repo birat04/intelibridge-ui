@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, Trash2, MoreHorizontal } from 'lucide-react';
+import { Settings, Trash2, MoreHorizontal, GripVertical } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface WorkflowStepCardProps {
@@ -16,6 +16,7 @@ interface WorkflowStepCardProps {
   onEdit: (id: string) => void;
   onRemove: (id: string) => void;
   isEditing?: boolean;
+  isDraggable?: boolean;
 }
 
 const WorkflowStepCard: React.FC<WorkflowStepCardProps> = ({
@@ -29,11 +30,17 @@ const WorkflowStepCard: React.FC<WorkflowStepCardProps> = ({
   onEdit,
   onRemove,
   isEditing = false,
+  isDraggable = false,
 }) => {
   return (
     <Card className={`${isEditing ? 'border-primary ring-1 ring-primary' : ''}`}>
       <CardHeader className="flex flex-row items-center justify-between p-4">
         <div className="flex items-center gap-3">
+          {isDraggable && (
+            <div className="cursor-grab">
+              <GripVertical className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+            </div>
+          )}
           <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white ${iconColor}`}>
             {icon}
           </div>

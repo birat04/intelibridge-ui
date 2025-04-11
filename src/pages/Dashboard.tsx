@@ -1,328 +1,317 @@
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Search, Filter, Grid3X3, List, Clock, Tag, ExternalLink,
-  MoreVertical, Calendar, ChevronDown, Home, Zap,
-  Mail, Bot, BellRing, MessageSquareText
-} from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import { useMediaQuery } from '@/hooks/use-media-query';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import BackButton from "@/components/BackButton";
-import { Label } from "@/components/ui/label";
-
-const data = [
-  {
-    id: 1,
-    title: "Website Redesign",
-    status: "In progress",
-    priority: "High",
-    createdAt: "2023-01-01",
-  },
-  {
-    id: 2,
-    title: "Mobile App Development",
-    status: "Todo",
-    priority: "High",
-    createdAt: "2023-02-15",
-  },
-  {
-    id: 3,
-    title: "Backend API Development",
-    status: "In progress",
-    priority: "Medium",
-    createdAt: "2023-03-01",
-  },
-  {
-    id: 4,
-    title: "Frontend Development",
-    status: "Done",
-    priority: "Low",
-    createdAt: "2023-04-01",
-  },
-  {
-    id: 5,
-    title: "Database Design",
-    status: "Todo",
-    priority: "High",
-    createdAt: "2023-05-01",
-  },
-  {
-    id: 6,
-    title: "UI/UX Design",
-    status: "In progress",
-    priority: "Medium",
-    createdAt: "2023-06-01",
-  },
-  {
-    id: 7,
-    title: "Testing and QA",
-    status: "Done",
-    priority: "Low",
-    createdAt: "2023-07-01",
-  },
-];
+import { 
+  BarChart3, 
+  CalendarDays, 
+  Folder, 
+  Search, 
+  Settings, 
+  Zap,
+  Mail,
+  Bot,
+  BellRing 
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import CreateMenu from '@/components/CreateMenu';
 
 const Dashboard: React.FC = () => {
-  const [open, setOpen] = React.useState(false);
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const [showDrawer, setShowDrawer] = useState(false);
-
-  useEffect(() => {
-    setShowDrawer(isMobile);
-  }, [isMobile]);
-
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b bg-white p-4 shadow-sm">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <BackButton to="/" />
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <h1 className="text-xl font-bold">Dashboard</h1>
           </div>
-          <div className="flex gap-2 items-center">
-            <Input type="search" placeholder="Search..." className="max-w-xs md:block hidden" />
-            <Button variant="outline" size="sm" className="md:block hidden">
-              <Search className="mr-2 h-4 w-4" />
-              Search
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                  <span className="sr-only">Open user menu</span>
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Logout</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-center gap-4">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="pl-8 w-[200px] lg:w-[300px]"
+              />
+            </div>
+            <CreateMenu />
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto flex flex-1 flex-col md:flex-row gap-4 p-4">
-        <aside className="w-full md:w-64 border rounded-md p-4 bg-white">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold mb-2">Project</h2>
-            <Button variant="ghost" className="justify-start w-full">
-              <Grid3X3 className="mr-2 h-4 w-4" />
-              Overview
-            </Button>
-            <Button variant="ghost" className="justify-start w-full">
-              <List className="mr-2 h-4 w-4" />
-              List
-            </Button>
-            <Button variant="ghost" className="justify-start w-full">
-              <Calendar className="mr-2 h-4 w-4" />
-              Calendar
-            </Button>
+      {/* Main content */}
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="grid gap-8">
+          {/* Quick stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Total Workflows</CardTitle>
+                <Zap className="h-4 w-4 text-gray-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">12</div>
+                <p className="text-xs text-gray-500">+2.5% from last month</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Active Workflows</CardTitle>
+                <Zap className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">8</div>
+                <p className="text-xs text-gray-500">+1.2% from last month</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+                <CalendarDays className="h-4 w-4 text-gray-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">324</div>
+                <p className="text-xs text-gray-500">+12% from last month</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Completed Tasks</CardTitle>
+                <CalendarDays className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">287</div>
+                <p className="text-xs text-gray-500">+18% from last month</p>
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold mb-2">Tasks</h2>
-            <Button variant="ghost" className="justify-start w-full">
-              <Clock className="mr-2 h-4 w-4" />
-              Today
-            </Button>
-            <Button variant="ghost" className="justify-start w-full">
-              <Tag className="mr-2 h-4 w-4" />
-              Tags
-            </Button>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Workflows</h2>
-            <Link to="/workflow-builder">
-              <Button variant="ghost" className="justify-start w-full">
-                <Zap className="mr-2 h-4 w-4" />
-                Workflow Builder
-              </Button>
-            </Link>
-          </div>
-        </aside>
-
-        <main className="flex-1 bg-white border rounded-md p-4">
-          <div className="mb-4 flex justify-between items-center">
-            <h2 className="text-2xl font-semibold">Tasks</h2>
-            <div className="flex gap-2">
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" />
-                Filters
-              </Button>
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Task
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Task</DialogTitle>
-                    <DialogDescription>
-                      Make changes to your profile here. Click save when you're done.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="name" className="text-right">
-                        Name
-                      </Label>
-                      <Input id="name" value="Pedro Duarte" className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="username" className="text-right">
-                        Username
-                      </Label>
-                      <Input id="username" value="@peduarte" className="col-span-3" />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit">Save changes</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-
-          <Tabs defaultValue="all" className="w-full">
+          {/* Tabs section */}
+          <Tabs defaultValue="workflows" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="inProgress">In Progress</TabsTrigger>
-              <TabsTrigger value="todo">Todo</TabsTrigger>
-              <TabsTrigger value="done">Done</TabsTrigger>
+              <TabsTrigger value="workflows">Workflows</TabsTrigger>
+              <TabsTrigger value="tables">Tables</TabsTrigger>
+              <TabsTrigger value="interfaces">Interfaces</TabsTrigger>
+              <TabsTrigger value="chatbots">Chatbots</TabsTrigger>
+              <TabsTrigger value="canvas">Canvas</TabsTrigger>
+              <TabsTrigger value="agents">Agents</TabsTrigger>
             </TabsList>
-            <TabsContent value="all" className="mt-4">
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {data.map((item) => (
-                  <Card key={item.id}>
-                    <CardHeader>
-                      <CardTitle>{item.title}</CardTitle>
-                      <CardDescription>{item.createdAt}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Badge variant="secondary">{item.priority}</Badge>
-                    </CardContent>
-                    <CardFooter className="flex justify-between items-center">
-                      <p>{item.status}</p>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>Delete</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem>View</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </CardFooter>
-                  </Card>
-                ))}
+            
+            <TabsContent value="workflows" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">Recent Workflows</h2>
+                <Link to="/workflow-builder">
+                  <Button variant="outline">Create New Workflow</Button>
+                </Link>
               </div>
-            </TabsContent>
-            <TabsContent value="inProgress" className="mt-4">
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {data.filter((item) => item.status === "In progress").map((item) => (
-                  <Card key={item.id}>
-                    <CardHeader>
-                      <CardTitle>{item.title}</CardTitle>
-                      <CardDescription>{item.createdAt}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Badge variant="secondary">{item.priority}</Badge>
-                    </CardContent>
-                    <CardFooter className="flex justify-between items-center">
-                      <p>{item.status}</p>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>Delete</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem>View</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-          
-          <div className="mt-8 p-4 border rounded-md bg-gray-50">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">My Workflows</h3>
-              <Link to="/workflow-builder">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Workflow
-                </Button>
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Link to="/workflow-builder">
-                <Card className="cursor-pointer hover:border-primary transition-all hover:shadow-md">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Customer Support Automation</CardTitle>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Workflow Cards */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Email Notifications</CardTitle>
+                      <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
+                    </div>
+                    <CardDescription>Sends email when new form is submitted</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center text-sm text-gray-500 mb-2">
-                      <Badge className="mr-2 bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
-                      5 steps
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="h-6 w-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">
-                        <Mail className="h-3 w-3" />
+                    <div className="flex space-x-2 text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Mail className="mr-1 h-3 w-3" />
+                        <span>Gmail</span>
                       </div>
-                      <div className="text-gray-400">→</div>
-                      <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">
-                        <Bot className="h-3 w-3" />
+                      <span>→</span>
+                      <div className="flex items-center">
+                        <Bot className="mr-1 h-3 w-3" />
+                        <span>AI Analysis</span>
                       </div>
-                      <div className="text-gray-400">→</div>
-                      <div className="h-6 w-6 rounded-full bg-purple-500 flex items-center justify-center text-white text-xs">
-                        <BellRing className="h-3 w-3" />
+                      <span>→</span>
+                      <div className="flex items-center">
+                        <BellRing className="mr-1 h-3 w-3" />
+                        <span>Notify</span>
                       </div>
                     </div>
                   </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <div className="text-xs text-gray-500">
+                      Last run: 2 hours ago
+                    </div>
+                    <Link to="/workflow-builder">
+                      <Button variant="ghost" size="sm">Edit</Button>
+                    </Link>
+                  </CardFooter>
                 </Card>
-              </Link>
-              
-              <Link to="/workflow-builder">
-                <Card className="cursor-pointer border-dashed border-gray-300 hover:border-primary transition-all flex flex-col items-center justify-center p-6">
-                  <Plus className="h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-gray-500">Create a new workflow</p>
+                
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Data Sync</CardTitle>
+                      <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-100">Active</Badge>
+                    </div>
+                    <CardDescription>Sync data between CRM and database</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex space-x-2 text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Mail className="mr-1 h-3 w-3" />
+                        <span>CRM</span>
+                      </div>
+                      <span>→</span>
+                      <div className="flex items-center">
+                        <Bot className="mr-1 h-3 w-3" />
+                        <span>Transform</span>
+                      </div>
+                      <span>→</span>
+                      <div className="flex items-center">
+                        <BellRing className="mr-1 h-3 w-3" />
+                        <span>Database</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <div className="text-xs text-gray-500">
+                      Last run: 1 day ago
+                    </div>
+                    <Link to="/workflow-builder">
+                      <Button variant="ghost" size="sm">Edit</Button>
+                    </Link>
+                  </CardFooter>
                 </Card>
-              </Link>
-            </div>
-          </div>
-        </main>
-      </div>
+                
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Lead Generator</CardTitle>
+                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Draft</Badge>
+                    </div>
+                    <CardDescription>Generates leads from website visitors</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex space-x-2 text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <Mail className="mr-1 h-3 w-3" />
+                        <span>Website</span>
+                      </div>
+                      <span>→</span>
+                      <div className="flex items-center">
+                        <Bot className="mr-1 h-3 w-3" />
+                        <span>AI Filter</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <div className="text-xs text-gray-500">
+                      Created: 3 days ago
+                    </div>
+                    <Link to="/workflow-builder">
+                      <Button variant="ghost" size="sm">Edit</Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="tables" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">Your Tables</h2>
+                <Link to="/tables-builder">
+                  <Button variant="outline">Create New Table</Button>
+                </Link>
+              </div>
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500">You haven't created any tables yet.</p>
+                  <div className="flex justify-center mt-4">
+                    <Link to="/tables-builder">
+                      <Button>Create Your First Table</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="interfaces" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">Your Interfaces</h2>
+                <Link to="/interface-builder">
+                  <Button variant="outline">Create New Interface</Button>
+                </Link>
+              </div>
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500">You haven't created any interfaces yet.</p>
+                  <div className="flex justify-center mt-4">
+                    <Link to="/interface-builder">
+                      <Button>Create Your First Interface</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="chatbots" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">Your Chatbots</h2>
+                <Link to="/chatbot-builder">
+                  <Button variant="outline">Create New Chatbot</Button>
+                </Link>
+              </div>
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500">You haven't created any chatbots yet.</p>
+                  <div className="flex justify-center mt-4">
+                    <Link to="/chatbot-builder">
+                      <Button>Create Your First Chatbot</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="canvas" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">Your Canvases</h2>
+                <Link to="/canvas-builder">
+                  <Button variant="outline">Create New Canvas</Button>
+                </Link>
+              </div>
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500">You haven't created any canvases yet.</p>
+                  <div className="flex justify-center mt-4">
+                    <Link to="/canvas-builder">
+                      <Button>Create Your First Canvas</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="agents" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold">Your Agents</h2>
+                <Link to="/agents-builder">
+                  <Button variant="outline">Create New Agent</Button>
+                </Link>
+              </div>
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-gray-500">You haven't created any agents yet.</p>
+                  <div className="flex justify-center mt-4">
+                    <Link to="/agents-builder">
+                      <Button>Create Your First Agent</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
     </div>
   );
 };
