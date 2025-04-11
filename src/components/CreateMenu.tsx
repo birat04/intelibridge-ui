@@ -6,7 +6,7 @@ import {
   Table, 
   Layout, 
   MessageSquare, 
-  Canvas, 
+  Palette,
   Users,
   PlusCircle
 } from 'lucide-react';
@@ -66,7 +66,7 @@ const createOptions: CreateOption[] = [
   {
     id: 'canvas',
     name: 'Canvas',
-    icon: <Canvas className="h-6 w-6" />,
+    icon: <Palette className="h-6 w-6" />,
     description: 'Create visual canvases to map out processes and ideas.',
     path: '/canvas-builder',
     color: 'bg-pink-500',
