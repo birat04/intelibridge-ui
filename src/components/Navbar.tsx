@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogIn, Home } from 'lucide-react';
 
@@ -8,6 +8,7 @@ const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,7 +21,7 @@ const Navbar: React.FC = () => {
 
   const handleNavigation = (id: string) => {
     setIsMenuOpen(false);
-    if (window.location.pathname === '/') {
+    if (location.pathname === '/') {
       const element = document.getElementById(id);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' });

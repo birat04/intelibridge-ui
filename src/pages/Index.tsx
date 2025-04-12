@@ -5,6 +5,8 @@ import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import Features from '@/components/Features';
 import WorkflowDemo from '@/components/WorkflowDemo';
+import Pricing from '@/components/Pricing';
+import About from '@/components/About';
 import Footer from '@/components/Footer';
 
 const Index: React.FC = () => {
@@ -22,6 +24,8 @@ const Index: React.FC = () => {
       </div>
       <Features />
       <WorkflowDemo />
+      <Pricing />
+      <About />
       <Footer />
     </div>
   );
