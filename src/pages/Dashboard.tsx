@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   BarChart3, 
   CalendarDays, 
@@ -10,7 +10,8 @@ import {
   Zap,
   Mail,
   Bot,
-  BellRing 
+  BellRing,
+  ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,12 +21,22 @@ import { Badge } from '@/components/ui/badge';
 import CreateMenu from '@/components/CreateMenu';
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  
+  const handleGoBack = () => {
+    navigate('/');
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center">
+            <Button variant="ghost" size="sm" onClick={handleGoBack} className="mr-4">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
             <h1 className="text-xl font-bold">Dashboard</h1>
           </div>
           <div className="flex items-center gap-4">

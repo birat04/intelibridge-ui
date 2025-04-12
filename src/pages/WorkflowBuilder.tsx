@@ -5,9 +5,11 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import BackButton from "@/components/BackButton";
 import WorkflowStepCard from "@/components/WorkflowStepCard";
 import WorkflowStepEditor from "@/components/WorkflowStepEditor";
+import ChatbotAssistant from "@/components/ChatbotAssistant";
 import { Button } from "@/components/ui/button";
-import { Plus, Save } from 'lucide-react';
+import { Plus, Save, ArrowLeft, Bot, PencilLine } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type WorkflowStep = {
   id: string;
@@ -46,6 +48,7 @@ const WorkflowBuilder: React.FC = () => {
   const [activeStep, setActiveStep] = useState<WorkflowStep | null>(null);
   const [workflowName, setWorkflowName] = useState<string>("Customer Support Workflow");
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<string>("manual");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -100,12 +103,104 @@ const WorkflowBuilder: React.FC = () => {
     });
   };
 
+  const handleChatbotSuggestion = (suggestion: string) => {
+    // Parse the suggestion and create workflow steps
+    if (suggestion.includes('email notification')) {
+      const newSteps: WorkflowStep[] = [
+        {
+          id: `step-${Date.now()}-1`,
+          type: 'trigger',
+          name: 'Email Received',
+          description: 'Triggers when a new email is received',
+          config: { mailbox: 'inbox' }
+        },
+        {
+          id: `step-${Date.now()}-2`,
+          type: 'action',
+          name: 'Filter by Subject',
+          description: 'Filters emails based on the subject line',
+          config: { contains: 'important' }
+        },
+        {
+          id: `step-${Date.now()}-3`,
+          type: 'action',
+          name: 'Send Notification',
+          description: 'Sends a notification to the user',
+          config: { channel: 'email' }
+        }
+      ];
+      setSteps(newSteps);
+      setWorkflowName("Email Notification Workflow");
+    } else if (suggestion.includes('data sync')) {
+      const newSteps: WorkflowStep[] = [
+        {
+          id: `step-${Date.now()}-1`,
+          type: 'trigger',
+          name: 'Database Change',
+          description: 'Triggers when database records are changed',
+          config: { table: 'customers' }
+        },
+        {
+          id: `step-${Date.now()}-2`,
+          type: 'action',
+          name: 'Transform Data',
+          description: 'Transforms data to match external system',
+          config: { format: 'JSON' }
+        },
+        {
+          id: `step-${Date.now()}-3`,
+          type: 'action',
+          name: 'Update External System',
+          description: 'Updates records in the external system',
+          config: { system: 'CRM' }
+        }
+      ];
+      setSteps(newSteps);
+      setWorkflowName("Data Synchronization Workflow");
+    } else if (suggestion.includes('customer support')) {
+      const newSteps: WorkflowStep[] = [
+        {
+          id: `step-${Date.now()}-1`,
+          type: 'trigger',
+          name: 'New Support Ticket',
+          description: 'Triggers when a new support ticket is created',
+          config: { channel: 'all' }
+        },
+        {
+          id: `step-${Date.now()}-2`,
+          type: 'action',
+          name: 'Sentiment Analysis',
+          description: 'Analyzes ticket sentiment using AI',
+          config: { model: 'gpt4' }
+        },
+        {
+          id: `step-${Date.now()}-3`,
+          type: 'action',
+          name: 'Categorize Ticket',
+          description: 'Categorizes the ticket based on content',
+          config: { categories: ['billing', 'technical', 'feature'] }
+        },
+        {
+          id: `step-${Date.now()}-4`,
+          type: 'action',
+          name: 'Assign to Agent',
+          description: 'Assigns ticket to appropriate agent',
+          config: { assignmentRule: 'category' }
+        }
+      ];
+      setSteps(newSteps);
+      setWorkflowName("Customer Support Workflow");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <BackButton to="/dashboard" className="mb-6" />
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Workflow Builder</h1>
+          <div className="flex items-center">
+            <BackButton to="/dashboard" className="mr-4" />
+            <h1 className="text-2xl font-bold">Workflow Builder</h1>
+          </div>
           <div className="flex gap-2">
             <Button onClick={handleAddStep} variant="outline">
               <Plus className="h-4 w-4 mr-2" />
@@ -131,8 +226,25 @@ const WorkflowBuilder: React.FC = () => {
           </div>
         </div>
 
+        <Tabs 
+          value={activeTab} 
+          onValueChange={setActiveTab}
+          className="mb-6"
+        >
+          <TabsList>
+            <TabsTrigger value="manual" className="flex items-center gap-2">
+              <PencilLine className="h-4 w-4" />
+              Manual Builder
+            </TabsTrigger>
+            <TabsTrigger value="chatbot" className="flex items-center gap-2">
+              <Bot className="h-4 w-4" />
+              AI Assistant
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+          <div className={`${activeTab === "manual" ? "lg:col-span-2" : "hidden"}`}>
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold mb-4">Workflow Steps</h2>
               <DndContext 
@@ -166,18 +278,35 @@ const WorkflowBuilder: React.FC = () => {
             </div>
           </div>
 
+          <div className={`${activeTab === "chatbot" ? "lg:col-span-2" : "hidden"}`}>
+            <div className="bg-white rounded-lg shadow-md p-6 h-[500px]">
+              <ChatbotAssistant onSuggestionApply={handleChatbotSuggestion} />
+            </div>
+          </div>
+
           <div>
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-              {activeStep ? (
+              {activeStep && activeTab === "manual" ? (
                 <WorkflowStepEditor 
                   step={activeStep}
                   onSave={handleStepUpdate}
                   onCancel={() => setActiveStep(null)}
                 />
-              ) : (
+              ) : activeTab === "manual" ? (
                 <div className="text-center py-12">
                   <h3 className="text-lg font-medium mb-2">Step Editor</h3>
                   <p className="text-gray-500">Select a step to edit its properties</p>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <h3 className="text-lg font-medium mb-2">AI Workflow Builder</h3>
+                  <p className="text-gray-500">Use the AI Assistant to create workflows in natural language</p>
+                  <p className="text-gray-500 mt-4">Try saying:</p>
+                  <ul className="text-gray-500 mt-2 text-left list-disc pl-8">
+                    <li>Build me an email notification workflow</li>
+                    <li>Create a data sync workflow</li>
+                    <li>I need a customer support workflow</li>
+                  </ul>
                 </div>
               )}
             </div>
